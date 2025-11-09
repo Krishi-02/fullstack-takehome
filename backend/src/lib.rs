@@ -47,16 +47,16 @@ pub fn filter_builder_derive(input: TokenStream) -> TokenStream {
             quote! {
                 if let Some(ref filter) = self.#field_name {
                     if let Some(ref value) = filter.equals {
-                        conditions.push(format!("{} = '{}'", #field_name_str, value));
+                        conditions.push(format!("LOWER({}) = LOWER('{}')", #field_name_str, value));
                     }
                     if let Some(ref value) = filter.contains {
-                        conditions.push(format!("{} LIKE '%{}%'", #field_name_str, value));
+                        conditions.push(format!("LOWER({}) LIKE LOWER('%{}%')", #field_name_str, value));
                     }
                     if let Some(ref value) = filter.starts_with {
-                        conditions.push(format!("{} LIKE '{}%'", #field_name_str, value));
+                        conditions.push(format!("LOWER({}) LIKE LOWER('{}%')", #field_name_str, value));
                     }
                     if let Some(ref value) = filter.ends_with {
-                        conditions.push(format!("{} LIKE '%{}'", #field_name_str, value));
+                        conditions.push(format!("LOWER({}) LIKE LOWER('%{}')", #field_name_str, value));
                     }
                 }
             }
