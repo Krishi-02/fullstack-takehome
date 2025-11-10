@@ -142,6 +142,20 @@ impl Post {
     }
 }
 
+#[derive(InputObject)]
+struct CreatePostInput {
+    user_id: i32,
+    title: String,
+    content: Option<String>,
+}
+
+#[derive(InputObject)]
+struct UpdatePostInput {
+    id: i32,
+    title: Option<String>,
+    content: Option<String>,
+}
+
 #[derive(Default)]
 pub struct Query;
 
@@ -170,5 +184,109 @@ impl Query {
             .fetch_optional(pool)
             .await?;
         Ok(post)
+    }
+}
+
+#[derive(Default)]
+pub struct Mutation;
+
+#[Object]
+impl Mutation {
+    async fn create_post(&self, ctx: &Context<'_>, input: CreatePostInput) -> Result<Post> {
+        let pool = ctx.data::<PgPool>()?;
+        
+        // Verify user exists
+        let user_exists = sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"
+        )
+        .bind(input.user_id)
+        .fetch_one(pool)
+        .await?;
+        
+        if !user_exists {
+            return Err(async_graphql::Error::new("User not found"));
+        }
+        
+        let post = sqlx::query_as::<_, Post>(
+            "INSERT INTO posts (user_id, title, content) VALUES ($1, $2, $3) RETURNING *"
+        )
+        .bind(input.user_id)
+        .bind(&input.title)
+        .bind(&input.content)
+        .fetch_one(pool)
+        .await?;
+        
+        Ok(post)
+    }
+
+    async fn update_post(&self, ctx: &Context<'_>, input: UpdatePostInput) -> Result<Post> {
+        let pool = ctx.data::<PgPool>()?;
+        
+        // Check if post exists
+        let post_exists = sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1)"
+        )
+        .bind(input.id)
+        .fetch_one(pool)
+        .await?;
+        
+        if !post_exists {
+            return Err(async_graphql::Error::new("Post not found"));
+        }
+        
+        // Build update query with parameterized queries for safety
+        match (input.title.as_ref(), input.content.as_ref()) {
+            (Some(title), Some(content)) => {
+                let post = sqlx::query_as::<_, Post>(
+                    "UPDATE posts SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *"
+                )
+                .bind(title)
+                .bind(content)
+                .bind(input.id)
+                .fetch_one(pool)
+                .await?;
+                Ok(post)
+            }
+            (Some(title), None) => {
+                let post = sqlx::query_as::<_, Post>(
+                    "UPDATE posts SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *"
+                )
+                .bind(title)
+                .bind(input.id)
+                .fetch_one(pool)
+                .await?;
+                Ok(post)
+            }
+            (None, Some(content)) => {
+                let post = sqlx::query_as::<_, Post>(
+                    "UPDATE posts SET content = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *"
+                )
+                .bind(content)
+                .bind(input.id)
+                .fetch_one(pool)
+                .await?;
+                Ok(post)
+            }
+            (None, None) => {
+                // If no fields to update, just return the existing post
+                let post = sqlx::query_as::<_, Post>("SELECT * FROM posts WHERE id = $1")
+                    .bind(input.id)
+                    .fetch_one(pool)
+                    .await?;
+                Ok(post)
+            }
+        }
+    }
+
+    async fn delete_post(&self, ctx: &Context<'_>, id: i32) -> Result<bool> {
+        let pool = ctx.data::<PgPool>()?;
+        
+        let rows_affected = sqlx::query("DELETE FROM posts WHERE id = $1")
+            .bind(id)
+            .execute(pool)
+            .await?
+            .rows_affected();
+        
+        Ok(rows_affected > 0)
     }
 }

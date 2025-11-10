@@ -1,10 +1,10 @@
-use async_graphql::{EmptyMutation, EmptySubscription, Schema, http::GraphiQLSource};
+use async_graphql::{EmptySubscription, Schema, http::GraphiQLSource};
 use async_graphql_axum::GraphQL;
 mod resolvers;
 mod cors;
 mod db;
 
-use resolvers::Query;
+use resolvers::{Query, Mutation};
 use cors::cors_layer;
 use db::init_postgres;
 
@@ -24,7 +24,7 @@ async fn main() {
     let pool = init_postgres()
         .await
         .expect("Failed to initialize database connection");
-    let schema = Schema::build(Query::default(), EmptyMutation, EmptySubscription)
+    let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
         .data(pool)
         .finish();
 
