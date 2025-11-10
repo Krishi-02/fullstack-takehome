@@ -1,5 +1,5 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useMutation, useQuery, useApolloClient } from "@apollo/client/react";
 import { CreatePostDocument } from "../../gql/createPost";
 import { GetUsersDocument } from "../../__generated__/graphql";
 import {
@@ -128,14 +128,17 @@ export const CreatePostModal = ({
                   as="select"
                   id="userId"
                   name="userId"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name || `User ${user.id}`} (
-                      {user.email || "No email"})
-                    </option>
-                  ))}
+                  {users.length === 0 ? (
+                    <option value="">Loading users...</option>
+                  ) : (
+                    users.map((user) => (
+                      <option key={user.id} value={user.id} className="text-gray-900">
+                        {user.name || `User ${user.id}`} ({user.email || "No email"})
+                      </option>
+                    ))
+                  )}
                 </Field>
                 <ErrorMessage
                   name="userId"
@@ -156,7 +159,7 @@ export const CreatePostModal = ({
                   id="title"
                   name="title"
                   placeholder="Enter post title"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-md shadow-sm bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <ErrorMessage
                   name="title"
@@ -178,7 +181,7 @@ export const CreatePostModal = ({
                   name="content"
                   rows={6}
                   placeholder="Enter post content (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-md shadow-sm bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 />
                 <ErrorMessage
                   name="content"

@@ -19,7 +19,7 @@ export const CardView = ({ data, onEditPost, onDeletePost }: CardViewProps) => {
       {data.map((user) => (
         <div
           key={user.id}
-          className="bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow p-4"
+          className="bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:shadow-lg hover:border-blue-400 transition-all p-4"
         >
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b pb-2">
@@ -46,13 +46,17 @@ export const CardView = ({ data, onEditPost, onDeletePost }: CardViewProps) => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium text-gray-600">Posts:</span>
                   <span className="text-sm text-gray-500">
-                    {(user.posts || []).length} post{(user.posts || []).length !== 1 ? 's' : ''}
+                    {(user.posts || []).length} post
+                    {(user.posts || []).length !== 1 ? "s" : ""}
                   </span>
                 </div>
                 {(user.posts || []).length > 0 && (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {(user.posts || [])
-                      .filter((post): post is Post => post !== null && post !== undefined)
+                      .filter(
+                        (post): post is Post =>
+                          post !== null && post !== undefined
+                      )
                       .map((post) => (
                         <div
                           key={post.id}
@@ -96,4 +100,3 @@ export const CardView = ({ data, onEditPost, onDeletePost }: CardViewProps) => {
     </div>
   );
 };
-

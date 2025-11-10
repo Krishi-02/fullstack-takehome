@@ -84,11 +84,11 @@ export const AdvancedFilters = ({
               onChange={(e) =>
                 onUserIdChange(e.target.value ? Number(e.target.value) : null)
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">All Users</option>
+              <option value="" className="text-gray-900">All Users</option>
               {users.map((user) => (
-                <option key={user.id} value={user.id}>
+                <option key={user.id} value={user.id} className="text-gray-900">
                   {user.name || `User ${user.id}`} ({user.email || "No email"})
                 </option>
               ))}
@@ -104,7 +104,7 @@ export const AdvancedFilters = ({
               placeholder="Search in post titles/content..."
               value={postSearch}
               onChange={(e) => onPostSearchChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md shadow-sm bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -116,7 +116,7 @@ export const AdvancedFilters = ({
               type="date"
               value={dateFrom}
               onChange={(e) => onDateFromChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -128,7 +128,7 @@ export const AdvancedFilters = ({
               type="date"
               value={dateTo}
               onChange={(e) => onDateToChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
