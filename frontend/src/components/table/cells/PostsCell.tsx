@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect } from "react";
+import type { GetUsersQuery } from "../../../__generated__/graphql";
 
-interface Post {
-  id: number;
-  title: string | null;
-  content: string | null;
-}
+type Post = NonNullable<NonNullable<GetUsersQuery["users"][0]["posts"]>[0]>;
 
 interface PostsCellProps {
-  posts: Post[];
+  posts: (Post | null | undefined)[];
+  onEditPost?: (post: Post) => void;
+  onDeletePost?: (post: Post) => void;
 }
 
-export const PostsCell = ({ posts }: PostsCellProps) => {
+export const PostsCell = ({ posts, onEditPost, onDeletePost }: PostsCellProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const cellRef = useRef<HTMLTableCellElement>(null);
@@ -82,21 +81,55 @@ export const PostsCell = ({ posts }: PostsCellProps) => {
             Posts ({posts.length})
           </div>
           <div className="max-h-64 overflow-y-auto space-y-3">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="border-b border-gray-700 pb-2 last:border-0"
-              >
-                <div className="font-medium text-blue-300 mb-1">
-                  {post.title || "Untitled"}
-                </div>
-                {post.content && (
-                  <div className="text-xs text-gray-300 line-clamp-2">
-                    {post.content}
+            {posts
+              .filter(
+                (post): post is Post => post !== null && post !== undefined
+              )
+              .map((post) => (
+                <div
+                  key={post.id}
+                  className="border-b border-gray-700 pb-2 last:border-0"
+                >
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex-1">
+                      <div className="font-medium text-blue-300 mb-1">
+                        {post.title || "Untitled"}
+                      </div>
+                      {post.content && (
+                        <div className="text-xs text-gray-300 line-clamp-2">
+                          {post.content}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      {onEditPost && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditPost(post);
+                          }}
+                          className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded text-white"
+                          title="Edit post"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {onDeletePost && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeletePost(post);
+                          }}
+                          className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 rounded text-white"
+                          title="Delete post"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              ))}
           </div>
         </div>
       )}
