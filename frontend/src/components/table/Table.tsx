@@ -1,66 +1,102 @@
-import { memo } from 'react'
+import { memo, useMemo } from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { useQuery } from '@apollo/client/react'
-import { GetUsersDocument, type GetUsersQuery } from '../../__generated__/graphql'
-import { useState } from 'react'
+} from "@tanstack/react-table";
+import { useQuery } from "@apollo/client/react";
+import {
+  GetUsersDocument,
+  type GetUsersQuery,
+} from "../../__generated__/graphql";
+import { useState } from "react";
 
-import { TableFilters } from './TableFilters'
+import { TableFilters } from "./TableFilters";
+import { GenericCell } from "./cells/GenericCell";
+import { LoadingSpinner } from "../LoadingSpinner";
+import { PostsCell } from "./cells/PostsCell";
 
-const columnHelper = createColumnHelper<GetUsersQuery['users'][0]>()
+const columnHelper = createColumnHelper<GetUsersQuery["users"][0]>();
 
-const columns = [
-  columnHelper.accessor('id', {
-    header: 'ID',
-    cell: info => info.getValue(),
-  }),
-  columnHelper.accessor('name', {
-    header: 'Name',
-    cell: info => info.getValue(),
-  }),
-  columnHelper.accessor('age', {
-    header: 'Age',
-    cell: info => info.getValue(),
-  }),
-  columnHelper.accessor('email', {
-    header: 'Email',
-    cell: info => info.getValue(),
-  }),
-  columnHelper.accessor('phone', {
-    header: 'Phone',
-    cell: info => info.getValue(),
-  }),
-]
+const TableContent = memo(({ searchValue }: { searchValue: string }) => {
+  const filters = useMemo(() => {
+    const filter: any = {};
+    if (searchValue.trim()) {
+      filter.name = { contains: searchValue };
+    }
+    return filter;
+  }, [searchValue]);
 
-const TableContent = memo(() => {
-  const { data: usersData, loading, error } = useQuery(GetUsersDocument, {
+  const {
+    data: usersData,
+    loading,
+    error,
+  } = useQuery(GetUsersDocument, {
     variables: {
-      filters: {},
+      filters,
     },
-  })
-  
-  const data: GetUsersQuery['users'] = usersData?.users ?? []
-  
+  });
+
+  const data: GetUsersQuery["users"] = usersData?.users ?? [];
+
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("id", {
+        header: "ID",
+        cell: (info) => <GenericCell value={info.getValue()} />,
+      }),
+      columnHelper.accessor("name", {
+        header: "Name",
+        cell: (info) => <GenericCell value={info.getValue()} />,
+      }),
+      columnHelper.accessor("age", {
+        header: "Age",
+        cell: (info) => <GenericCell value={info.getValue()} />,
+      }),
+      columnHelper.accessor("email", {
+        header: "Email",
+        cell: (info) => <GenericCell value={info.getValue()} />,
+      }),
+      columnHelper.accessor("phone", {
+        header: "Phone",
+        cell: (info) => <GenericCell value={info.getValue()} />,
+      }),
+      columnHelper.display({
+        id: "posts",
+        header: "Posts",
+        cell: (info) => <PostsCell posts={info.row.original.posts || []} />,
+      }),
+    ],
+    []
+  );
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-  })
-  
-  if (loading) return <div className="p-4">Loading users...</div>
-  if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>
+  });
+
+  if (loading) return <LoadingSpinner />;
+  if (error)
+    return <div className="p-4 text-red-500">Error: {error.message}</div>;
+  if (data.length === 0)
+    return <div className="p-4 text-gray-500">No users found</div>;
 
   return (
-    <table>
+    <div className="overflow-x-auto">
+      <table
+        className="min-w-full border-collapse border border-gray-300"
+        style={{ overflow: "visible" }}
+      >
         <thead>
-          {table.getHeaderGroups().map(headerGroup => (
+          {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
-              {headerGroup.headers.map(header => (
-                <th key={header.id}>
+              {headerGroup.headers.map((header) => (
+                <th
+                  key={header.id}
+                  className="border border-gray-300 px-4 py-2 bg-gray-100 text-left"
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -73,43 +109,34 @@ const TableContent = memo(() => {
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map(row => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map(cell => (
-                <td key={cell.id}>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id} className="hover:bg-gray-50">
+              {row.getVisibleCells().map((cell) => (
+                <td
+                  key={cell.id}
+                  className="border border-gray-300 px-4 py-2 relative"
+                  style={{ overflow: "visible" }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
-        <tfoot>
-          {table.getFooterGroups().map(footerGroup => (
-            <tr key={footerGroup.id}>
-              {footerGroup.headers.map(header => (
-                <th key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.footer,
-                        header.getContext()
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </tfoot>
-    </table>
-  )
-})
+      </table>
+    </div>
+  );
+});
+
+TableContent.displayName = "TableContent";
 
 export const Table = () => {
-  const [searchValue, setSearchValue] = useState('')
+  const [searchValue, setSearchValue] = useState("");
 
   return (
     <div className="p-2">
       <TableFilters searchValue={searchValue} setSearchValue={setSearchValue} />
-      <TableContent />
+      <TableContent searchValue={searchValue} />
     </div>
-  )
-}
+  );
+};
