@@ -14,10 +14,16 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  mutation CreatePost($input: CreatePostInput!) {\n    createPost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.CreatePostDocument,
+    "\n  mutation DeletePost($id: Int!) {\n    deletePost(id: $id)\n  }\n": typeof types.DeletePostDocument,
     "\n  query GetUsers($filters: UserFilters!) {\n    users(filters: $filters) {\n      id\n      name\n      age\n      email\n      phone\n      posts {\n        id\n        title\n        content\n      }\n    }\n  }\n": typeof types.GetUsersDocument,
+    "\n  mutation UpdatePost($input: UpdatePostInput!) {\n    updatePost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.UpdatePostDocument,
 };
 const documents: Documents = {
+    "\n  mutation CreatePost($input: CreatePostInput!) {\n    createPost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n": types.CreatePostDocument,
+    "\n  mutation DeletePost($id: Int!) {\n    deletePost(id: $id)\n  }\n": types.DeletePostDocument,
     "\n  query GetUsers($filters: UserFilters!) {\n    users(filters: $filters) {\n      id\n      name\n      age\n      email\n      phone\n      posts {\n        id\n        title\n        content\n      }\n    }\n  }\n": types.GetUsersDocument,
+    "\n  mutation UpdatePost($input: UpdatePostInput!) {\n    updatePost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n": types.UpdatePostDocument,
 };
 
 /**
@@ -37,7 +43,19 @@ export function graphql(source: string): unknown;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  mutation CreatePost($input: CreatePostInput!) {\n    createPost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation CreatePost($input: CreatePostInput!) {\n    createPost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeletePost($id: Int!) {\n    deletePost(id: $id)\n  }\n"): (typeof documents)["\n  mutation DeletePost($id: Int!) {\n    deletePost(id: $id)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query GetUsers($filters: UserFilters!) {\n    users(filters: $filters) {\n      id\n      name\n      age\n      email\n      phone\n      posts {\n        id\n        title\n        content\n      }\n    }\n  }\n"): (typeof documents)["\n  query GetUsers($filters: UserFilters!) {\n    users(filters: $filters) {\n      id\n      name\n      age\n      email\n      phone\n      posts {\n        id\n        title\n        content\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdatePost($input: UpdatePostInput!) {\n    updatePost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation UpdatePost($input: UpdatePostInput!) {\n    updatePost(input: $input) {\n      id\n      title\n      content\n      userId\n      createdAt\n      updatedAt\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};
