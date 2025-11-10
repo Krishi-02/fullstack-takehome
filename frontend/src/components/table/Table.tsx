@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 
 import { TableFilters } from "./TableFilters";
+import { AdvancedFilters } from "./AdvancedFilters";
 import { GenericCell } from "./cells/GenericCell";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { PostsCell } from "./cells/PostsCell";
@@ -33,19 +34,30 @@ const TableContent = memo(
     onEditPost,
     onDeletePost,
     viewMode,
+    selectedUserId,
+    postSearch,
+    dateFrom,
+    dateTo,
   }: {
     searchValue: string;
     onEditPost?: (post: Post) => void;
     onDeletePost?: (post: Post) => void;
     viewMode: "table" | "card";
+    selectedUserId: number | null;
+    postSearch: string;
+    dateFrom: string;
+    dateTo: string;
   }) => {
     const filters = useMemo(() => {
       const filter: any = {};
       if (searchValue.trim()) {
         filter.name = { contains: searchValue };
       }
+      if (selectedUserId !== null) {
+        filter.id = { equals: selectedUserId };
+      }
       return filter;
-    }, [searchValue]);
+    }, [searchValue, selectedUserId]);
 
     const {
       data: usersData,
@@ -58,6 +70,74 @@ const TableContent = memo(
     });
 
     const data: GetUsersQuery["users"] = usersData?.users ?? [];
+
+    // Apply client-side filtering for posts and dates
+    const filteredData = useMemo(() => {
+      let filtered = data;
+
+      // Filter by post search (title or content)
+      if (postSearch.trim()) {
+        const searchLower = postSearch.toLowerCase();
+        filtered = filtered.map((user) => {
+          const filteredPosts = (user.posts || []).filter(
+            (post) =>
+              post &&
+              (post.title?.toLowerCase().includes(searchLower) ||
+                post.content?.toLowerCase().includes(searchLower))
+          );
+          return { ...user, posts: filteredPosts };
+        });
+      }
+
+      // Filter by date range (on user's createdAt or post's createdAt)
+      if (dateFrom || dateTo) {
+        filtered = filtered.filter((user) => {
+          // Check user's createdAt
+          if (user.createdAt) {
+            const userDate = new Date(user.createdAt);
+            if (dateFrom) {
+              const fromDate = new Date(dateFrom);
+              if (userDate < fromDate) return false;
+            }
+            if (dateTo) {
+              const toDate = new Date(dateTo);
+              toDate.setHours(23, 59, 59, 999); // Include entire end date
+              if (userDate > toDate) return false;
+            }
+            return true;
+          }
+          
+          // If user doesn't have createdAt, check posts
+          if (user.posts && user.posts.length > 0) {
+            return user.posts.some((post) => {
+              if (!post?.createdAt) return false;
+              const postDate = new Date(post.createdAt);
+              if (dateFrom) {
+                const fromDate = new Date(dateFrom);
+                if (postDate < fromDate) return false;
+              }
+              if (dateTo) {
+                const toDate = new Date(dateTo);
+                toDate.setHours(23, 59, 59, 999);
+                if (postDate > toDate) return false;
+              }
+              return true;
+            });
+          }
+          
+          return false; // No date info available
+        });
+      }
+
+      // Filter out users with no posts if post search is active
+      if (postSearch.trim()) {
+        filtered = filtered.filter(
+          (user) => (user.posts || []).length > 0
+        );
+      }
+
+      return filtered;
+    }, [data, postSearch, dateFrom, dateTo]);
 
     const columns = useMemo(
       () => [
@@ -97,64 +177,70 @@ const TableContent = memo(
     );
 
     const table = useReactTable({
-      data,
+      data: filteredData,
       columns,
       getCoreRowModel: getCoreRowModel(),
     });
 
-  if (loading) return <LoadingSpinner />;
-  if (error)
-    return <div className="p-4 text-red-500">Error: {error.message}</div>;
-  if (data.length === 0)
-    return <div className="p-4 text-gray-500">No users found</div>;
+    if (loading) return <LoadingSpinner />;
+    if (error)
+      return <div className="p-4 text-red-500">Error: {error.message}</div>;
+    if (filteredData.length === 0)
+      return <div className="p-4 text-gray-500">No users found</div>;
 
-  if (viewMode === "card") {
-    return <CardView data={data} onEditPost={onEditPost} onDeletePost={onDeletePost} />;
-  }
+    if (viewMode === "card") {
+      return (
+        <CardView
+          data={filteredData}
+          onEditPost={onEditPost}
+          onDeletePost={onDeletePost}
+        />
+      );
+    }
 
-  return (
-    <div className="overflow-x-auto">
-      <table
-        className="min-w-full border-collapse border border-gray-300"
-        style={{ overflow: "visible" }}
-      >
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="border border-gray-300 px-4 py-2 bg-gray-100 text-left"
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50">
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  className="border border-gray-300 px-4 py-2 relative"
-                  style={{ overflow: "visible" }}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+    return (
+      <div className="overflow-x-auto">
+        <table
+          className="min-w-full border-collapse border border-gray-300"
+          style={{ overflow: "visible" }}
+        >
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="border border-gray-300 px-4 py-2 bg-gray-100 text-left"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className="hover:bg-gray-50">
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className="border border-gray-300 px-4 py-2 relative"
+                    style={{ overflow: "visible" }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 );
 
@@ -163,10 +249,28 @@ TableContent.displayName = "TableContent";
 export const Table = () => {
   const [searchValue, setSearchValue] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [postSearch, setPostSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [deletingPost, setDeletingPost] = useState<Post | null>(null);
   const client = useApolloClient();
+
+  // Get all users for the filter dropdown
+  const { data: allUsersData } = useQuery(GetUsersDocument, {
+    variables: { filters: {} },
+  });
+
+  const allUsers = allUsersData?.users || [];
+
+  const handleClearFilters = () => {
+    setSelectedUserId(null);
+    setPostSearch("");
+    setDateFrom("");
+    setDateTo("");
+  };
 
   const [deletePostMutation, { loading: deleting }] = useMutation(
     DeletePostDocument,
@@ -229,12 +333,13 @@ export const Table = () => {
 
   return (
     <div className="p-2">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <TableFilters
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-        />
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <TableFilters
+            searchValue={searchValue}
+            setSearchValue={setSearchValue}
+          />
+          <div className="flex items-center gap-2">
           <div className="flex border border-gray-300 rounded-md overflow-hidden">
             <button
               onClick={() => setViewMode("table")}
@@ -290,12 +395,29 @@ export const Table = () => {
             + Create Post
           </button>
         </div>
+        </div>
+        <AdvancedFilters
+          users={allUsers}
+          selectedUserId={selectedUserId}
+          onUserIdChange={setSelectedUserId}
+          postSearch={postSearch}
+          onPostSearchChange={setPostSearch}
+          dateFrom={dateFrom}
+          onDateFromChange={setDateFrom}
+          dateTo={dateTo}
+          onDateToChange={setDateTo}
+          onClear={handleClearFilters}
+        />
       </div>
       <TableContent
         searchValue={searchValue}
         onEditPost={handleEditPost}
         onDeletePost={handleDeletePost}
         viewMode={viewMode}
+        selectedUserId={selectedUserId}
+        postSearch={postSearch}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
       />
       <CreatePostModal
         isOpen={isCreateModalOpen}

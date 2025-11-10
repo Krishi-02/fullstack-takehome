@@ -8,10 +8,12 @@ export const GET_USERS = gql`
       age
       email
       phone
+      createdAt
       posts {
         id
         title
         content
+        createdAt
       }
     }
   }
