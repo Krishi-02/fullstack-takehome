@@ -6,6 +6,7 @@ import {
   updatePostSchema,
   type UpdatePostFormValues,
 } from "../../schemas/postValidation";
+import toast from "react-hot-toast";
 
 interface EditPostModalProps {
   isOpen: boolean;
@@ -29,8 +30,12 @@ export const EditPostModal = ({
     {
       refetchQueries: [{ query: GetUsersDocument, variables: { filters: {} } }],
       onCompleted: () => {
+        toast.success("Post updated successfully!");
         onClose();
         onSuccess?.();
+      },
+      onError: (error) => {
+        toast.error(`Failed to update post: ${error.message}`);
       },
     }
   );
@@ -47,6 +52,7 @@ export const EditPostModal = ({
     values: UpdatePostFormValues,
     { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }
   ) => {
+    setSubmitting(true);
     try {
       await updatePostMutation({
         variables: {
@@ -58,8 +64,7 @@ export const EditPostModal = ({
         },
       });
     } catch (error) {
-      console.error("Error updating post:", error);
-    } finally {
+      // Error is handled by onError callback
       setSubmitting(false);
     }
   };

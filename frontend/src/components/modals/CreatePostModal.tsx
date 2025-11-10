@@ -6,6 +6,7 @@ import {
   createPostSchema,
   type CreatePostFormValues,
 } from "../../schemas/postValidation";
+import toast from "react-hot-toast";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -27,8 +28,12 @@ export const CreatePostModal = ({
     {
       refetchQueries: [{ query: GetUsersDocument, variables: { filters: {} } }],
       onCompleted: () => {
+        toast.success("Post created successfully!");
         onClose();
         onSuccess?.();
+      },
+      onError: (error) => {
+        toast.error(`Failed to create post: ${error.message}`);
       },
     }
   );
@@ -47,6 +52,7 @@ export const CreatePostModal = ({
     values: CreatePostFormValues,
     { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }
   ) => {
+    setSubmitting(true);
     try {
       await createPostMutation({
         variables: {
@@ -58,8 +64,7 @@ export const CreatePostModal = ({
         },
       });
     } catch (error) {
-      console.error("Error creating post:", error);
-    } finally {
+      // Error is handled by onError callback
       setSubmitting(false);
     }
   };

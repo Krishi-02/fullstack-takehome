@@ -20,6 +20,7 @@ import { CreatePostModal } from "../modals/CreatePostModal";
 import { EditPostModal } from "../modals/EditPostModal";
 import { DeletePostDialog } from "../modals/DeletePostDialog";
 import { DeletePostDocument } from "../../gql/deletePost";
+import toast from "react-hot-toast";
 
 const columnHelper = createColumnHelper<GetUsersQuery["users"][0]>();
 
@@ -163,7 +164,11 @@ export const Table = () => {
     {
       refetchQueries: [{ query: GetUsersDocument, variables: { filters: {} } }],
       onCompleted: () => {
+        toast.success("Post deleted successfully!");
         setDeletingPost(null);
+      },
+      onError: (error) => {
+        toast.error(`Failed to delete post: ${error.message}`);
       },
     }
   );
