@@ -22,11 +22,35 @@ export const CreatePostModal = ({
   const { data: usersData } = useQuery(GetUsersDocument, {
     variables: { filters: {} },
   });
+  const client = useApolloClient();
 
   const [createPostMutation, { loading: creating }] = useMutation(
     CreatePostDocument,
     {
-      refetchQueries: [{ query: GetUsersDocument, variables: { filters: {} } }],
+      update: (cache, { data }) => {
+        if (!data?.createPost) return;
+
+        // Optimistically update the cache
+        cache.updateQuery(
+          { query: GetUsersDocument, variables: { filters: {} } },
+          (existingData) => {
+            if (!existingData) return existingData;
+
+            return {
+              ...existingData,
+              users: existingData.users.map((user) => {
+                if (user.id === data.createPost.userId) {
+                  return {
+                    ...user,
+                    posts: [...(user.posts || []), data.createPost],
+                  };
+                }
+                return user;
+              }),
+            };
+          }
+        );
+      },
       onCompleted: () => {
         toast.success("Post created successfully!");
         onClose();
@@ -34,6 +58,8 @@ export const CreatePostModal = ({
       },
       onError: (error) => {
         toast.error(`Failed to create post: ${error.message}`);
+        // Refetch on error to sync with server
+        client.refetchQueries({ include: [GetUsersDocument] });
       },
     }
   );

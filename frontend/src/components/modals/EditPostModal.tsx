@@ -1,5 +1,5 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useMutation, useQuery, useApolloClient } from "@apollo/client/react";
 import { UpdatePostDocument } from "../../gql/updatePost";
 import { GetUsersDocument } from "../../__generated__/graphql";
 import {
@@ -25,10 +25,37 @@ export const EditPostModal = ({
   onSuccess,
   post,
 }: EditPostModalProps) => {
+  const client = useApolloClient();
+
   const [updatePostMutation, { loading: updating }] = useMutation(
     UpdatePostDocument,
     {
-      refetchQueries: [{ query: GetUsersDocument, variables: { filters: {} } }],
+      update: (cache, { data }) => {
+        if (!data?.updatePost) return;
+
+        // Optimistically update the cache
+        cache.updateQuery(
+          { query: GetUsersDocument, variables: { filters: {} } },
+          (existingData) => {
+            if (!existingData) return existingData;
+
+            return {
+              ...existingData,
+              users: existingData.users.map((user) => {
+                if (user.posts) {
+                  return {
+                    ...user,
+                    posts: user.posts.map((p) =>
+                      p?.id === data.updatePost.id ? data.updatePost : p
+                    ),
+                  };
+                }
+                return user;
+              }),
+            };
+          }
+        );
+      },
       onCompleted: () => {
         toast.success("Post updated successfully!");
         onClose();
@@ -36,6 +63,8 @@ export const EditPostModal = ({
       },
       onError: (error) => {
         toast.error(`Failed to update post: ${error.message}`);
+        // Refetch on error to sync with server
+        client.refetchQueries({ include: [GetUsersDocument] });
       },
     }
   );

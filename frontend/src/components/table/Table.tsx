@@ -5,7 +5,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useQuery, useMutation } from "@apollo/client/react";
+import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import {
   GetUsersDocument,
   type GetUsersQuery,
@@ -158,17 +158,43 @@ export const Table = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [deletingPost, setDeletingPost] = useState<Post | null>(null);
+  const client = useApolloClient();
 
   const [deletePostMutation, { loading: deleting }] = useMutation(
     DeletePostDocument,
     {
-      refetchQueries: [{ query: GetUsersDocument, variables: { filters: {} } }],
+      update: (cache, _result, { variables }) => {
+        if (!variables?.id) return;
+
+        // Optimistically remove the post from cache
+        cache.updateQuery(
+          { query: GetUsersDocument, variables: { filters: {} } },
+          (existingData) => {
+            if (!existingData) return existingData;
+
+            return {
+              ...existingData,
+              users: existingData.users.map((user) => {
+                if (user.posts) {
+                  return {
+                    ...user,
+                    posts: user.posts.filter((p) => p?.id !== variables.id),
+                  };
+                }
+                return user;
+              }),
+            };
+          }
+        );
+      },
       onCompleted: () => {
         toast.success("Post deleted successfully!");
         setDeletingPost(null);
       },
       onError: (error) => {
         toast.error(`Failed to delete post: ${error.message}`);
+        // Refetch on error to sync with server
+        client.refetchQueries({ include: [GetUsersDocument] });
       },
     }
   );
