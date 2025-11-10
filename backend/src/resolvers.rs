@@ -162,4 +162,13 @@ impl Query {
         let posts = sqlx::query_as::<_, Post>(&query).fetch_all(_pool).await?;
         Ok(posts)
     }
+
+    async fn post(&self, ctx: &Context<'_>, id: i32) -> Result<Option<Post>> {
+        let pool = ctx.data::<PgPool>()?;
+        let post = sqlx::query_as::<_, Post>("SELECT * FROM posts WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
+        Ok(post)
+    }
 }
