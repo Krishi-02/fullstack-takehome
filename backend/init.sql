@@ -67,3 +67,6 @@ INSERT INTO posts (id, user_id, title, content, created_at, updated_at) VALUES
     (9, 4, 'CI/CD Best Practices', 'Continuous Integration and Continuous Deployment are essential for modern software development. We''ll discuss pipeline design, testing strategies, and automation best practices.', '2025-01-05 10:20:00', '2025-01-05 10:20:00'),
     (10, 4, 'Monitoring and Observability', 'Understanding what''s happening in production is critical. Learn about metrics, logging, tracing, and how to build a comprehensive observability strategy for your applications.', '2025-01-06 12:00:00', '2025-01-06 12:00:00')
 ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content;
+
+-- Reset the sequence to the maximum ID to avoid conflicts
+SELECT setval('posts_id_seq', (SELECT MAX(id) FROM posts));
