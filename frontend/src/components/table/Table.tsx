@@ -20,6 +20,7 @@ import { CreatePostModal } from "../modals/CreatePostModal";
 import { EditPostModal } from "../modals/EditPostModal";
 import { DeletePostDialog } from "../modals/DeletePostDialog";
 import { DeletePostDocument } from "../../gql/deletePost";
+import { CardView } from "./CardView";
 import toast from "react-hot-toast";
 
 const columnHelper = createColumnHelper<GetUsersQuery["users"][0]>();
@@ -31,10 +32,12 @@ const TableContent = memo(
     searchValue,
     onEditPost,
     onDeletePost,
+    viewMode,
   }: {
     searchValue: string;
     onEditPost?: (post: Post) => void;
     onDeletePost?: (post: Post) => void;
+    viewMode: "table" | "card";
   }) => {
     const filters = useMemo(() => {
       const filter: any = {};
@@ -99,55 +102,59 @@ const TableContent = memo(
       getCoreRowModel: getCoreRowModel(),
     });
 
-    if (loading) return <LoadingSpinner />;
-    if (error)
-      return <div className="p-4 text-red-500">Error: {error.message}</div>;
-    if (data.length === 0)
-      return <div className="p-4 text-gray-500">No users found</div>;
+  if (loading) return <LoadingSpinner />;
+  if (error)
+    return <div className="p-4 text-red-500">Error: {error.message}</div>;
+  if (data.length === 0)
+    return <div className="p-4 text-gray-500">No users found</div>;
 
-    return (
-      <div className="overflow-x-auto">
-        <table
-          className="min-w-full border-collapse border border-gray-300"
-          style={{ overflow: "visible" }}
-        >
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="border border-gray-300 px-4 py-2 bg-gray-100 text-left"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50">
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="border border-gray-300 px-4 py-2 relative"
-                    style={{ overflow: "visible" }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+  if (viewMode === "card") {
+    return <CardView data={data} onEditPost={onEditPost} onDeletePost={onDeletePost} />;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table
+        className="min-w-full border-collapse border border-gray-300"
+        style={{ overflow: "visible" }}
+      >
+        <thead>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th
+                  key={header.id}
+                  className="border border-gray-300 px-4 py-2 bg-gray-100 text-left"
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id} className="hover:bg-gray-50">
+              {row.getVisibleCells().map((cell) => (
+                <td
+                  key={cell.id}
+                  className="border border-gray-300 px-4 py-2 relative"
+                  style={{ overflow: "visible" }}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
   }
 );
 
@@ -155,6 +162,7 @@ TableContent.displayName = "TableContent";
 
 export const Table = () => {
   const [searchValue, setSearchValue] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [deletingPost, setDeletingPost] = useState<Post | null>(null);
@@ -221,22 +229,73 @@ export const Table = () => {
 
   return (
     <div className="p-2">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <TableFilters
           searchValue={searchValue}
           setSearchValue={setSearchValue}
         />
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          + Create Post
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex border border-gray-300 rounded-md overflow-hidden">
+            <button
+              onClick={() => setViewMode("table")}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                viewMode === "table"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+              title="Table view"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode("card")}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                viewMode === "card"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+              title="Card view"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              </svg>
+            </button>
+          </div>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            + Create Post
+          </button>
+        </div>
       </div>
       <TableContent
         searchValue={searchValue}
         onEditPost={handleEditPost}
         onDeletePost={handleDeletePost}
+        viewMode={viewMode}
       />
       <CreatePostModal
         isOpen={isCreateModalOpen}
